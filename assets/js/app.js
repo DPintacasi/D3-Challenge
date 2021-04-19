@@ -1,51 +1,101 @@
-function makeResponsive(){
+function buildChart(){
 
-var svgArea = d3.select("body").select("svg")
+  var svgArea = d3.select("body").select("svg")
 
-if (!svgArea.empty()) {
-  svgArea.remove();
-}
-var containerWidth = +d3.select('#plot_container').style('width').slice(0, -2)
-console.log(containerWidth)
+  if (!svgArea.empty()) {
+    svgArea.remove();
+  }
+  var containerWidth = +d3.select('#plot_container').style('width').slice(0, -2)
+  console.log(containerWidth)
 
-var svgWidth = containerWidth;
-var svgHeight = containerWidth*(500/950);
-var margin = {
-  top: svgHeight*0.1,
-  right: svgWidth*0.10,
-  bottom: svgHeight*0.25,
-  left: svgWidth*0.15
-};
-var width = svgWidth - margin.left - margin.right;
-var height = svgHeight - margin.top - margin.bottom;
+  var svgWidth = containerWidth;
+  var svgHeight = containerWidth;
+  var margin = {
+    top: svgHeight*0.1,
+    right: svgWidth*0.10,
+    bottom: svgHeight*0.25,
+    left: svgWidth*0.15
+  };
+  var width = svgWidth - margin.left - margin.right;
+  var height = svgHeight - margin.top - margin.bottom;
 
-var svg = d3.select("#scatter")
+  var svg = d3.select("#scatter")
   .append("svg")
   .attr("width", svgWidth)
   .attr("height", svgHeight);
-  
-var chartGroup = svg.append("g")
+    
+  var chartGroup = svg.append("g")
   .attr("transform", `translate(${margin.left}, ${margin.top})`);
 
-d3.csv("assets/data/data.csv").then(function(data){
+  // x axis label/options
+  const xoptions = ["Income", "Age", "Poverty"]
+  chartGroup.append("g").attr("id", "xOptions").selectAll("div")
+  .data(xoptions)
+  .enter()
+  .append("text")
+  .attr("transform", "rotate(-90)")
+  .attr("y", (d, i) => 0-margin.left+40+i*15)
+  .attr("x", 0 - (height / 2))
+  .classed("aText", "true")
+  .classed("inactive", "true")
+  .classed("xOptions", "true")
+  .text(d => d);
+
+  // y axis label
+  const yoptions = ["healthcare", "obesity", "smokes"]
+  chartGroup.append("g").attr("id", "yOptions")
+  .selectAll("div")
+  .data(yoptions)
+  .enter()
+  .append("text")
+  .attr("x", width/2)
+  .attr("y", (d, i) => height+40+i*15)
+  .classed("aText", "true")
+  .classed("inactive", "true")
+  .classed("yOptions", "true")
+  .text(d => d);
+
+  // Event Listener and Handler for Axis Chooser
+  d3.selectAll(".aText").on("click", function(){
     
+    console.log(this);
+
+    var selection = d3.select(this);
+
+    if (selection.classed("xOptions")){
+      d3.selectAll(".xOptions").classed("inactive", true);
+    }
+    else{
+      d3.selectAll(".yOptions").classed("inactive", true);
+    };
+
+    selection.classed("inactive", false).classed("active", "true");
+
+  });
+
+  d3.csv("assets/data/data.csv").then(function(data){
+      
     console.log(data);
 
     // parse data
     data.forEach(function(d){
-        for (var key in d) {
-            if(key !== "abbr" && key !== "state"){
-                d[key] = +d[key];
-          }}
-    })
+      for (var key in d) {
+        if(key !== "abbr" && key !== "state"){
+          d[key] = +d[key];
+        };
+      };
+    });
 
-    //scalar functions
+
+
+      //scalar functions
     var xLinearScale = d3.scaleLinear()
-        .domain(d3.extent(data, d => d.income))
-        .range([0, width]);
+    .domain(d3.extent(data, d => d.income))
+    .range([0, width]);
+
     var yLinearScale = d3.scaleLinear()
-        .domain([0,d3.max(data, d => d.healthcare)])
-        .range([height, 0]);
+    .domain([0,d3.max(data, d => d.healthcare)])
+    .range([height, 0]);
 
     // axes
     var xAxis = d3.axisBottom(xLinearScale).ticks(6);
@@ -79,7 +129,7 @@ d3.csv("assets/data/data.csv").then(function(data){
     .attr("y", d => yLinearScale(d.healthcare)+3)
     .text(d => d.abbr)
     .classed("stateText", "true")
-    .style("font-size", `${radius}px`)
+    .style("font-size", `${radius}px`);
 
     // tool tip
     var toolTip = d3.tip()
@@ -97,33 +147,17 @@ d3.csv("assets/data/data.csv").then(function(data){
     // event listeners to display and hide the tooltip
     circlesGroup.on("mouseover", function(d) {
       toolTip.show(d, this);
-    })
-      .on("mouseout", function(d) {
-        toolTip.hide(d);
-      });
-    
-    // x axis label
-    chartGroup.append("text")
-    .attr("transform", "rotate(-90)")
-    .attr("y", 0 - margin.left + 40)
-    .attr("x", 0 - (height / 2))
-    .attr("dy", "1em")
-    .attr("class", "axisText")
-    .style("text-anchor", "middle")
-    .text("Health Care");
-    
-    // y axis label
-    chartGroup.append("text")
-    .attr("transform", `translate(${width/2}, ${height+40})`)
-    .attr("class", "axisText")
-    .style("text-anchor", "middle")
-    .text("Income");
+    });
 
-}).catch(function(error) {
+    circlesGroup.on("mouseout", function(d) {
+      toolTip.hide(d);
+    });
+
+  }).catch(function(error) {
     console.log(error);
   });
-}
+};
 
-makeResponsive()
+buildChart()
 
-d3.select(window).on("resize", makeResponsive);
+d3.select(window).on("resize", buildChart);
