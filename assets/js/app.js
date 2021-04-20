@@ -1,4 +1,8 @@
+
+
 function makeResponsive(){
+
+  // console.log("make resp ran")
 
   var svgArea = d3.select("body").select("svg")
 
@@ -50,7 +54,7 @@ function makeResponsive(){
   .enter()
   .append("text")
   .attr("transform", "rotate(-90)")
-  .attr("y", (d, i) => 0-margin.left+40+i*15)
+  .attr("y", (d, i) => 0-55+i*15)
   .attr("x", 0 - (height / 2))
   .classed("aText", "true")
   .classed("inactive", "true")
@@ -158,13 +162,6 @@ function makeResponsive(){
 
 
     };
-
-    // if (skip_init){
-    //   newChart()
-    // }
-    // else{
-    //   initChart()
-    // }
 
     initChart()
     
@@ -279,6 +276,6 @@ function makeResponsive(){
 
 };
 
-makeResponsive()
+makeResponsive(true)
+d3.select(window).on("resize", makeResponsive);
 
-d3.select(window).on("resize", makeResponsive())
