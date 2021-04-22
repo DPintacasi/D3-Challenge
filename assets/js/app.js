@@ -1,15 +1,14 @@
 
 
 function makeResponsive(){
-
-  // console.log("make resp ran")
-
+  // check if there is already a chart
   var svgArea = d3.select("body").select("svg")
 
   if (!svgArea.empty()) {
     svgArea.remove();
   }
 
+  // get container size for responsive chart dimensions
   var containerWidth = +d3.select('#plot_container').style('width').slice(0, -2)
   console.log(containerWidth)
 
@@ -24,11 +23,13 @@ function makeResponsive(){
   var width = svgWidth - margin.left - margin.right;
   var height = svgHeight - margin.top - margin.bottom;
 
+  // initialise the SVG
   var svg = d3.select("#scatter")
   .append("svg")
   .attr("width", svgWidth)
   .attr("height", svgHeight);
-    
+
+  //initialise chartgroup to easily apply transformation  
   var chartGroup = svg.append("g")
   .attr("transform", `translate(${margin.left}, ${margin.top})`);
 
@@ -43,10 +44,10 @@ function makeResponsive(){
   .attr("y", (d, i) => height+40+i*15)
   .classed("aText", "true")
   .classed("inactive", "true")
-  .classed("xOptions", "true")
+  .classed("xOptions", "true") 
   .text(d => d);
 
-  // y axis label
+  // y axis label/options
   const yoptions = ["Lacks Healthcare (%)", "Obese (%)", "Smokes (%)"]
   chartGroup
   .selectAll("div")
@@ -62,14 +63,15 @@ function makeResponsive(){
   .text(d => d);
 
   // default selected labels
+  // removes "inactive" class and adds "active"
   d3.selectAll(".aText")
   .filter(function(){ 
     return d3.select(this).text() === "Lacks Healthcare (%)" || d3.select(this).text() === "Median Income ($)"
   })
-  .classed("inactive", false)
+  .classed("inactive", false) 
   .classed("active", true);
 
-
+  // promise holds data
   d3.csv("assets/data/data.csv").then(function(data){
       
     console.log(data);
@@ -83,17 +85,21 @@ function makeResponsive(){
       };
     });
 
+    /***** ***** ***** ***** ***** ***** ***** ***** */
+    // initial chart
     function initChart(){
-      //scalar functions
       
+      //get extents of data set (so we can add padding to axes)
       var xExtent = d3.extent(data, d => d.income);
       var yExtent = d3.extent(data, d => d.healthcare);
 
       var xRange = xExtent[1]-xExtent[0];
       var yRange = yExtent[1]-yExtent[0];
 
+      // padding as a percentage of the range
       const padP = 0.1
       
+      //linear scales
       var xLinearScale = d3.scaleLinear()
       .domain([xExtent[0]-xRange*padP,xExtent[1]+xRange*padP])
       .range([0, width]);
@@ -115,8 +121,8 @@ function makeResponsive(){
       .attr("id", "yAxis")
       .call(yAxis);
 
-      //data points
-      var radius = 8;
+      //data points 
+      const radius = 8;
       var circlesGroup = chartGroup.selectAll("circle")
       .data(data)
       .enter()
@@ -163,6 +169,8 @@ function makeResponsive(){
 
     };
 
+    //run initial chart
+
     initChart()
     
     /***** ***** ***** ***** ***** ***** ***** ***** */
@@ -171,6 +179,9 @@ function makeResponsive(){
 
       var selection = d3.select(this);
 
+      // all options are set as inactive 
+      // conditional on whether the selection was an x or y option
+      // so that the other axis is not affected
       if (selection.classed("xOptions")){
         d3.selectAll(".xOptions").classed("inactive", true).classed("active",false);
       }
@@ -178,13 +189,18 @@ function makeResponsive(){
         d3.selectAll(".yOptions").classed("inactive", true).classed("active",false);
       };
 
+      // selection if set to "active"
       selection.classed("inactive", false).classed("active", true);
 
       newChart()
     });
+    
+    /***** ***** ***** ***** ***** ***** ***** ***** */
+    // function that animates the chart with new selected data
 
     function newChart(){
 
+      // data/key is recongised via the "active" class
       var xSelection = d3.selectAll(".active").filter(function(){ 
         return d3.select(this).classed("xOptions")});
       var ySelection = d3.selectAll(".active").filter(function(){ 
@@ -193,6 +209,7 @@ function makeResponsive(){
       console.log(xSelection.text())
       console.log(ySelection.text())
 
+      // axis label is converted to name of the key
       const labels = {
         "Median Income ($)" : "income",
         "Median Age" : "age",
@@ -205,9 +222,11 @@ function makeResponsive(){
       var xKey = labels[xSelection.text()];
       var yKey = labels[ySelection.text()];
 
+      // once key is identified, data array is extracted
       var xArray = data.map((d)=>d[xKey]);
       var yArray = data.map((d)=>d[yKey]);
 
+      // axis creationg similar to initchart
       var xExtent = d3.extent(xArray);
       var yExtent = d3.extent(yArray);
 
@@ -227,6 +246,7 @@ function makeResponsive(){
       var xAxis = d3.axisBottom(xLinearScale).ticks(6);
       var yAxis = d3.axisLeft(yLinearScale).ticks(6);
 
+      // animate axis change
       chartGroup.select("#xAxis")
       .transition()
       .duration(1000)
@@ -237,6 +257,7 @@ function makeResponsive(){
       .duration(1000)
       .call(yAxis);
 
+      // animate markers and labels based on new data array
       chartGroup.selectAll("circle")
       .transition()
       .duration(1000)
@@ -249,6 +270,7 @@ function makeResponsive(){
       .attr("x", (d, i) => xLinearScale(xArray[i]))
       .attr("y", (d, i) => yLinearScale(yArray[i])+3);
 
+      // update tooltip
       var toolTip = d3.tip()
       .attr("class", "d3-tip")
       .offset([10, 30])
@@ -278,4 +300,3 @@ function makeResponsive(){
 
 makeResponsive(true)
 d3.select(window).on("resize", makeResponsive);
-
